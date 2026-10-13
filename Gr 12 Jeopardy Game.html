@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unit 1 Review - Jeopardy Game</title>
+  <style>
+    :root {
+      --bg-color: #0c1021;
+      --card-blue: #060ce9;
+      --card-hover: #1e25f4;
+      --gold: #ffcc00;
+      --white: #ffffff;
+      --card-disabled: #111538;
+      --text-muted: #8892b0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    h1 {
+      color: var(--gold);
+      font-size: 2.2rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    /* Scoreboard */
+    .scoreboard {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .team-card {
+      background: #182042;
+      border: 2px solid #2a3668;
+      border-radius: 8px;
+      padding: 10px 8px;
+      text-align: center;
+      min-width: 110px;
+      flex: 1;
+    }
+
+    .team-name {
+      color: var(--white);
+      font-weight: bold;
+      font-size: 1rem;
+      border: none;
+      background: transparent;
+      text-align: center;
+      width: 100%;
+      outline: none;
+    }
+
+    .team-score {
+      color: var(--gold);
+      font-size: 1.6rem;
+      font-weight: bold;
+      margin: 5px 0;
+    }
+
+    .score-controls {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .score-btn {
+      background: #2a3668;
+      color: white;
+      border: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .score-btn:hover {
+      background: var(--gold);
+      color: black;
+    }
+
+    /* Game Board Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .cat-header {
+      background: #111836;
+      border: 2px solid #2a3a7c;
+      color: var(--gold);
+      font-size: 0.95rem;
+      font-weight: bold;
+      text-align: center;
+      padding: 12px 5px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 60px;
+      text-transform: uppercase;
+    }
+
+    .card {
+      background: var(--card-blue);
+      border: 2px solid #334199;
+      color: var(--gold);
+      font-size: 1.8rem;
+      font-weight: bold;
+      aspect-ratio: 16/10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: transform 0.1s, background 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+
+    .card:hover:not(.disabled) {
+      background: var(--card-hover);
+      transform: scale(1.03);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.5);
+    }
+
+    .card.disabled {
+      background: var(--card-disabled);
+      color: #313866;
+      border-color: #1a2044;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background: #121936;
+      border: 3px solid var(--gold);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 700px;
+      padding: 30px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 0 30px rgba(255, 204, 0, 0.3);
+    }
+
+    .modal-category {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+    }
+
+    .modal-value {
+      color: var(--gold);
+      font-size: 2.2rem;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    .modal-prompt {
+      font-size: 1.6rem;
+      line-height: 1.4;
+      margin-bottom: 25px;
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .answer-box {
+      background: #080c1d;
+      border: 2px dashed #2e3e82;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 25px;
+      font-size: 1.3rem;
+      color: #4deeea;
+      display: none;
+    }
+
+    .answer-box.visible {
+      display: block;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      font-size: 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-reveal {
+      background: var(--gold);
+      color: #000;
+    }
+
+    .btn-reveal:hover {
+      background: #ffe066;
+    }
+
+    .btn-close {
+      background: #334155;
+      color: #fff;
+    }
+
+    .btn-close:hover {
+      background: #475569;
+    }
+
+    .award-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 15px;
+      justify-content: center;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .btn-team {
+      background: #1e293b;
+      color: #fff;
+      border: 1px solid #334155;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-team:hover {
+      background: #3b82f6;
+      border-color: #60a5fa;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        gap: 5px;
+      }
+      .cat-header {
+        font-size: 0.75rem;
+        padding: 6px 2px;
+        min-height: 45px;
+      }
+      .card {
+        font-size: 1.2rem;
+      }
+      .modal-prompt {
+        font-size: 1.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Unit 1 Review</h1>
+    <div class="subtitle">A1 ESL Vocabulary & Grammar Game</div>
+  </header>
+
+  <!-- Scoreboard for 5 Teams -->
+  <div class="scoreboard">
+    <div class="team-card">
+      <input type="text" class="team-name" value="Team 1" />
+      <div class="team-score" id="score-0">0</div>
+      <div class="score-controls">
+        <button class="score-btn" onclick="adjustScore(0, -100)">-</button>
+        <button class="score-btn" onclick="adjustScore(0, 100)">+</button>
+      </div>
+    </div>
+    <div class="team-card">
+      <input type="text" class="team-name" value="Team 2" />
+      <div class="team-score" id="score-1">0</div>
+      <div class="score-controls">
+        <button class="score-btn" onclick="adjustScore(1, -100)">-</button>
+        <button class="score-btn" onclick="adjustScore(1, 100)">+</button>
+      </div>
+    </div>
+    <div class="team-card">
+      <input type="text" class="team-name" value="Team 3" />
+      <div class="team-score" id="score-2">0</div>
+      <div class="score-controls">
+        <button class="score-btn" onclick="adjustScore(2, -100)">-</button>
+        <button class="score-btn" onclick="adjustScore(2, 100)">+</button>
+      </div>
+    </div>
+    <div class="team-card">
+      <input type="text" class="team-name" value="Team 4" />
+      <div class="team-score" id="score-3">0</div>
+      <div class="score-controls">
+        <button class="score-btn" onclick="adjustScore(3, -100)">-</button>
+        <button class="score-btn" onclick="adjustScore(3, 100)">+</button>
+      </div>
+    </div>
+    <div class="team-card">
+      <input type="text" class="team-name" value="Team 5" />
+      <div class="team-score" id="score-4">0</div>
+      <div class="score-controls">
+        <button class="score-btn" onclick="adjustScore(4, -100)">-</button>
+        <button class="score-btn" onclick="adjustScore(4, 100)">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Board Grid -->
+  <div class="grid" id="board"></div>
+
+  <!-- Question Modal -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal-content">
+      <div class="modal-category" id="modal-cat">Category</div>
+      <div class="modal-value" id="modal-val">$100</div>
+      <div class="modal-prompt" id="modal-prompt">Prompt text goes here...</div>
+      <div class="answer-box" id="modal-answer">Answer text goes here...</div>
+      
+      <div class="modal-actions">
+        <button class="btn btn-reveal" id="btn-reveal" onclick="revealAnswer()">Show Answer</button>
+        <button class="btn btn-close" onclick="closeModal()">Close</button>
+      </div>
+
+      <div class="award-buttons" id="award-box" style="display:none;">
+        <span style="color:#aaa; font-size:0.85rem; align-self:center; width:100%;">Add points to:</span>
+        <button class="btn-team" onclick="awardPoints(0)">Team 1</button>
+        <button class="btn-team" onclick="awardPoints(1)">Team 2</button>
+        <button class="btn-team" onclick="awardPoints(2)">Team 3</button>
+        <button class="btn-team" onclick="awardPoints(3)">Team 4</button>
+        <button class="btn-team" onclick="awardPoints(4)">Team 5</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Audio Context Setup
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'open') {
+        osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+      } else if (type === 'reveal') {
+        osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.2);
+      }
+    }
+
+    const categories = [
+      "Riddles: Room Items",
+      "Riddles: The Home",
+      "Complete Sentence",
+      "Short Answers",
+      "Room Description"
+    ];
+
+    const values = [100, 200, 300, 400, 500];
+
+    const questions = {
+      // Category 1: Riddles: Room Items
+      "0-100": { prompt: "You turn me on when it is dark so you can see. What am I?", answer: "Answer: A lamp (or light)" },
+      "0-200": { prompt: "You look at me to see your face and hair. What am I?", answer: "Answer: A mirror" },
+      "0-300": { prompt: "You throw paper and trash inside me. What am I?", answer: "Answer: A bin" },
+      "0-400": { prompt: "I am soft. I am on the bed or sofa. What am I?", answer: "Answer: A cushion" },
+      "0-500": { prompt: "I have photos on me, I keep the house up. What am I?", answer: "Answer: A wall" },
+
+      // Category 2: Riddles: The Home
+      "1-100": { prompt: "The room to cook food and make tea. What am I?", answer: "Answer: The kitchen" },
+      "1-200": { prompt: "You walk up or down these to go up a level. What are they?", answer: "Answer: Stairs" },
+      "1-300": { prompt: "This has grass, plants, and flowers. What am I?", answer: "Answer: The garden" },
+      "1-400": { prompt: "You park your car in this place. What is it?", answer: "Answer: The garage" },
+      "1-500": { prompt: "This is a small space. You can see outside and walk on it. What is it?", answer: "Answer: A balcony" },
+
+      // Category 3: Complete Sentence
+      "2-100": { prompt: "I put my laptop ____ the desk to study.", answer: "Answer: on" },
+      "2-200": { prompt: "The cat is sleeping ____ the bed because it likes the dark under it.", answer: "Answer: under" },
+      "2-300": { prompt: "The clock is on the wall, high ____ the table.", answer: "Answer: above" },
+      "2-400": { prompt: "There is a table ____ the bed and the window.", answer: "Answer: between" },
+      "2-500": { prompt: "I keep all my shirts and jackets inside the ____.", answer: "Answer: wardrobe" },
+
+      // Category 4: Short Answers
+      "3-100": { prompt: "What is one item on your desk right now?", answer: "Sentence Starter: On my desk, I have a..." },
+      "3-200": { prompt: "Where do you put your key when you come home?", answer: "Sentence Starter: I put my key on..." },
+      "3-300": { prompt: "What is on the wall in your bedroom?", answer: "Sentence Starter: On my wall, there is a..." },
+      "3-400": { prompt: "Where do you keep your books?", answer: "Sentence Starter: I keep my books on/in..." },
+      "3-500": { prompt: "What room do you like best in your house?", answer: "Sentence Starter: My favorite room is..." },
+
+      // Category 5: Room Description
+      "4-100": { prompt: "What is one favorite item in your room?", answer: "Answer: My favorite item in my room is..." },
+      "4-200": { prompt: "Is your bedroom upstairs or downstairs?", answer: "Answer: My bedroom is..." },
+      "4-300": { prompt: "Describe your bed in two short sentences.", answer: "Sentence Starter: My bed is... It has a..." },
+      "4-400": { prompt: "Name two things in your living room and where they are.", answer: "Sentence Starter: In my living room, there is a... next to/on..." },
+      "4-500": { prompt: "Describe your future room in two short sentences.", answer: "Sentence Starter: My future room has... It is..." }
+    };
+
+    let scores = [0, 0, 0, 0, 0];
+    let currentVal = 0;
+    let currentCardElem = null;
+
+    // Render Game Board
+    function buildBoard() {
+      const board = document.getElementById("board");
+      board.innerHTML = "";
+
+      // Headers
+      categories.forEach(cat => {
+        const header = document.createElement("div");
+        header.className = "cat-header";
+        header.innerText = cat;
+        board.appendChild(header);
+      });
+
+      // Cards
+      values.forEach(val => {
+        categories.forEach((cat, colIndex) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerText = `$${val}`;
+          card.onclick = () => openQuestion(colIndex, val, card);
+          board.appendChild(card);
+        });
+      });
+    }
+
+    function openQuestion(col, val, cardElem) {
+      if (cardElem.classList.contains("disabled")) return;
+
+      playSound('open');
+      currentVal = val;
+      currentCardElem = cardElem;
+
+      const qKey = `${col}-${val}`;
+      const qData = questions[qKey];
+
+      document.getElementById("modal-cat").innerText = categories[col];
+      document.getElementById("modal-val").innerText = `$${val}`;
+      document.getElementById("modal-prompt").innerText = qData.prompt;
+      
+      const ansBox = document.getElementById("modal-answer");
+      ansBox.innerText = qData.answer;
+      ansBox.classList.remove("visible");
+
+      document.getElementById("btn-reveal").style.display = "inline-block";
+      document.getElementById("award-box").style.display = "none";
+
+      document.getElementById("modal").classList.add("active");
+    }
+
+    function revealAnswer() {
+      playSound('reveal');
+      document.getElementById("modal-answer").classList.add("visible");
+      document.getElementById("btn-reveal").style.display = "none";
+      document.getElementById("award-box").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("modal").classList.remove("active");
+      if (currentCardElem) {
+        currentCardElem.classList.add("disabled");
+        currentCardElem.innerText = "";
+      }
+    }
+
+    function adjustScore(teamIdx, amount) {
+      scores[teamIdx] += amount;
+      document.getElementById(`score-${teamIdx}`).innerText = scores[teamIdx];
+    }
+
+    function awardPoints(teamIdx) {
+      adjustScore(teamIdx, currentVal);
+      closeModal();
+    }
+
+    // Initialize Game
+    buildBoard();
+  </script>
+</body>
+</html>
