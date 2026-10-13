@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dream Chase: B1+ Metro Quest</title>
+<style>
+  :root {
+    --bg-dark: #090d16;
+    --card-bg: #1e293b;
+    --vocab-color: #3b82f6;   /* Blue */
+    --grammar-color: #22c55e; /* Green */
+    --speak-color: #a855f7;   /* Purple */
+    --wild-color: #f97316;    /* Orange */
+    --accent: #38bdf8;
+    --text-light: #f8fafc;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
+  body { 
+    background-color: var(--bg-dark); 
+    color: var(--text-light); 
+    height: 100vh; 
+    width: 100vw;
+    display: flex; 
+    overflow: hidden; 
+  }
+
+  /* GAME CONTAINER LAYOUT (80% / 20%) */
+  .game-container { display: flex; width: 100vw; height: 100vh; padding: 15px; gap: 15px; }
+
+  /* BOARD SIDE - 80% WIDTH WITH BACKGROUND */
+  .board-wrapper { 
+    flex: 0 0 80%; 
+    background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)), 
+                url('https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+    border-radius: 16px; 
+    border: 2px solid #334155; 
+    position: relative; 
+    padding: 10px; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+  }
+  svg#board-svg { width: 100%; height: 100%; }
+
+  /* SIDE PANEL - 20% WIDTH */
+  .side-panel { flex: 0 0 20%; display: flex; flex-direction: column; gap: 15px; justify-content: center; }
+
+  .panel-box { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid #334155; }
+  .panel-box h2 { font-size: 1.1rem; margin-bottom: 10px; color: var(--accent); border-bottom: 1px solid #334155; padding-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* PLAYER CARDS */
+  .player-list { display: flex; flex-direction: column; gap: 8px; }
+  .player-card { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px; background: #0f172a; border: 2px solid transparent; transition: all 0.3s; }
+  .player-card.active { border-color: var(--accent); background: #1e293b; box-shadow: 0 0 12px rgba(56, 189, 248, 0.4); }
+  .p-avatar { width: 18px; height: 18px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+  .p-info { display: flex; align-items: center; font-weight: bold; font-size: 0.95rem; }
+  .p-status { font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; background: #334155; font-weight: bold; }
+
+  /* CONTROLS */
+  .dice-area { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .dice-box { width: 70px; height: 70px; background: #ffffff; color: #000; font-size: 2.5rem; font-weight: bold; border-radius: 14px; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 15px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.1s; }
+  .dice-box:active { transform: scale(0.95); }
+  .btn-roll { background: var(--accent); color: #0f172a; border: none; padding: 12px 20px; font-weight: bold; font-size: 1rem; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; }
+  .btn-roll:hover { background: #7dd3fc; }
+
+  /* BIGGER POPUP MODAL */
+  .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.88); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .modal-overlay.active { opacity: 1; pointer-events: all; }
+  
+  .modal-card { 
+    background: var(--card-bg); 
+    border-radius: 20px; 
+    width: 85%; 
+    max-width: 900px; 
+    padding: 35px; 
+    border: 5px solid var(--accent); 
+    box-shadow: 0 0 40px rgba(0,0,0,0.95); 
+    text-align: center; 
+    position: relative; 
+  }
+  
+  .modal-type { font-size: 1.2rem; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; }
+  .modal-question { font-size: 1.8rem; margin: 25px 0; line-height: 1.4; color: #f8fafc; font-weight: 600; }
+
+  /* RADIO BUTTON OPTIONS CONTAINER */
+  .options-container { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; text-align: left; }
+  .option-label { 
+    background: #0f172a; 
+    padding: 16px 20px; 
+    border-radius: 10px; 
+    border: 2px solid #334155; 
+    font-size: 1.2rem; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    gap: 15px; 
+    transition: 0.2s; 
+  }
+  .option-label:hover { border-color: var(--accent); background: #1b263b; }
+  .option-label input[type="radio"] { width: 22px; height: 22px; accent-color: var(--accent); cursor: pointer; }
+  
+  /* FEEDBACK BOX */
+  .feedback-box { font-size: 1.3rem; font-weight: bold; margin: 15px 0; padding: 12px; border-radius: 8px; display: none; }
+  .feedback-box.correct { background: #166534; color: #4ade80; display: block; }
+  .feedback-box.incorrect { background: #991b1b; color: #fca5a5; display: block; }
+
+  .modal-btns { display: flex; gap: 15px; justify-content: center; margin-top: 25px; }
+  .btn-action { border: none; padding: 14px 28px; font-size: 1.1rem; font-weight: bold; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+  .btn-submit { background: var(--accent); color: #0f172a; }
+  .btn-submit:hover { background: #7dd3fc; }
+  .btn-close { background: #64748b; color: #fff; }
+
+  /* SVG MAP & BIGGER TILES */
+  .map-line { stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; fill: none; opacity: 0.85; }
+  .tile-node { cursor: pointer; transition: transform 0.2s; }
+  .tile-node:hover { transform: scale(1.15); }
+  .node-text { font-size: 15px; font-weight: 800; fill: #fff; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .p-token { transition: all 0.5s ease-in-out; }
+</style>
+</head>
+<body>
+
+<div class="game-container">
+  <!-- SVG BOARD (80% WIDTH) -->
+  <div class="board-wrapper">
+    <svg id="board-svg" viewBox="0 0 800 550">
+      <!-- Tracks -->
+      <path class="map-line" stroke="#3b82f6" d="M 60 70 L 220 70 L 380 70 L 540 70 L 700 70 L 700 180 L 540 180 L 380 180" />
+      <path class="map-line" stroke="#ef4444" d="M 380 70 L 540 180" />
+      <path class="map-line" stroke="#22c55e" d="M 380 180 L 220 180 L 100 180 L 100 300 L 220 300 L 380 300" />
+      <path class="map-line" stroke="#f59e0b" d="M 100 180 C 20 180, 20 300, 100 300" /> 
+      <path class="map-line" stroke="#a855f7" d="M 380 300 L 540 300 L 700 300 L 700 420 L 540 420 L 380 420 L 220 420 L 100 420 L 100 500 L 700 500" />
+      <path class="map-line" stroke="#38bdf8" stroke-dasharray="8,8" d="M 540 300 L 540 420" />
+
+      <!-- Nodes & Tokens -->
+      <g id="track-nodes"></g>
+      <g id="player-tokens"></g>
+    </svg>
+  </div>
+
+  <!-- SIDEBAR PANEL (20% WIDTH) -->
+  <div class="side-panel">
+    <!-- Turn & Roll -->
+    <div class="panel-box dice-area">
+      <h2>CURRENT TURN</h2>
+      <div id="turn-display" style="font-size: 1.2rem; font-weight: bold; color: var(--accent);">Player 1</div>
+      <div class="dice-box" id="dice" onclick="rollDice()">🎲</div>
+      <button class="btn-roll" onclick="rollDice()">ROLL DIE</button>
+      <button class="btn-action" onclick="resetGame()" style="background: #e11d48; color: white; width: 100%; margin-top: 8px;">🔄 RESET GAME</button>
+    </div>
+
+    <!-- Players -->
+    <div class="panel-box">
+      <h2>PLAYERS</h2>
+      <div class="player-list" id="player-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- POPUP MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-card" id="modal-card">
+    <div class="modal-type" id="modal-type">VOCABULARY</div>
+    <div class="modal-question" id="modal-question">Question text goes here?</div>
+    
+    <!-- Radio buttons container for multiple-choice questions -->
+    <div class="options-container" id="options-container"></div>
+    
+    <!-- Result message -->
+    <div class="feedback-box" id="feedback-box"></div>
+    
+    <div class="modal-btns">
+      <button class="btn-action btn-submit" id="btn-submit" onclick="checkRadioAnswer()">Submit Answer</button>
+      <button class="btn-action btn-close" id="btn-close" style="display:none;" onclick="closeModal()">Continue Turn</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const boardNodes = [
+  { id: 0, x: 60, y: 70, type: 'start', label: 'START' },
+  { id: 1, x: 140, y: 70, type: 'vocab', label: '1' },
+  { id: 2, x: 220, y: 70, type: 'grammar', label: '2' },
+  { id: 3, x: 300, y: 70, type: 'speak', label: '3' },
+  { id: 4, x: 380, y: 70, type: 'junction', label: '🔀 J1' },
+  { id: 5, x: 460, y: 70, type: 'wild', label: '5' },
+  { id: 6, x: 540, y: 70, type: 'goback', label: '🔄 -2' },
+  { id: 7, x: 620, y: 70, type: 'vocab', label: '7' },
+  { id: 8, x: 700, y: 70, type: 'skipturn', label: '🛑 SKIP' },
+  { id: 9, x: 700, y: 180, type: 'grammar', label: '9' },
+  { id: 10, x: 620, y: 180, type: 'speak', label: '10' },
+  { id: 11, x: 540, y: 180, type: 'wild', label: '11' },
+  { id: 12, x: 460, y: 180, type: 'vocab', label: '12' },
+  { id: 13, x: 380, y: 180, type: 'warp', label: '🌀 WARP' },
+  { id: 14, x: 300, y: 180, type: 'grammar', label: '14' },
+  { id: 15, x: 220, y: 180, type: 'speak', label: '15' },
+  { id: 16, x: 100, y: 180, type: 'loop', label: '🔄 LOOP' },
+  { id: 17, x: 40, y: 240, type: 'wild', label: '17' },
+  { id: 18, x: 100, y: 300, type: 'vocab', label: '18' },
+  { id: 19, x: 220, y: 300, type: 'grammar', label: '19' },
+  { id: 20, x: 380, y: 300, type: 'junction', label: '🔀 J2' },
+  { id: 21, x: 460, y: 300, type: 'speak', label: '21' },
+  { id: 22, x: 540, y: 300, type: 'skipturn', label: '🛑 SKIP' },
+  { id: 23, x: 620, y: 300, type: 'wild', label: '23' },
+  { id: 24, x: 700, y: 300, type: 'vocab', label: '24' },
+  { id: 25, x: 700, y: 420, type: 'goback', label: '🔄 -2' },
+  { id: 26, x: 620, y: 420, type: 'grammar', label: '26' },
+  { id: 27, x: 540, y: 420, type: 'speak', label: '27' },
+  { id: 28, x: 460, y: 420, type: 'wild', label: '28' },
+  { id: 29, x: 380, y: 420, type: 'warp', label: '🌀 WARP' },
+  { id: 30, x: 300, y: 420, type: 'vocab', label: '30' },
+  { id: 31, x: 220, y: 420, type: 'grammar', label: '31' },
+  { id: 32, x: 100, y: 420, type: 'speak', label: '32' },
+  { id: 33, x: 100, y: 500, type: 'wild', label: '33' },
+  { id: 34, x: 400, y: 500, type: 'vocab', label: '34' },
+  { id: 35, x: 700, y: 500, type: 'finish', label: 'FINISH 🏆' }
+];
+
+// --- QUESTION BANK ---
+const questions = {
+  vocab: [
+    { q: "Complete: 'My brother spends all his free time _______ in summer.'", options: ["kayaking", "kayak", "to kayak"], correct: 0 },
+    { q: "Which suffix creates an adjective from 'comfort' and 'fashion'?", options: ["-ible", "-able", "-al"], correct: 1 },
+    { q: "Which adjective ending in -able means 'easy to understand'?", options: ["sensible", "understandable", "memorable"], correct: 1 },
+    { q: "Complete: 'It is _______ to make an early start if you prefer the beach empty.'", options: ["sensible", "sensitive", "sensing"], correct: 0 },
+    { q: "What does the phrasal verb 'give up on' mean?", options: ["To start a new hobby", "To stop believing in/pursuing something", "To give a gift to a friend"], correct: 1 },
+    { q: "Complete: 'The hard work you put in will be _______ it.'", options: ["worth", "value", "price"], correct: 0 },
+    { q: "Which phrase means to feel happy and satisfied about your accomplishments?", options: ["take pride in", "give up on", "make sense of"], correct: 0 }
+  ],
+  grammar: [
+    { q: "Correct sentence: 'She is always _______ about driving me.'", options: ["complain", "complaining", "complained"], correct: 1 },
+    { q: "Complete with preposition: 'We went to the beach _____ July.'", options: ["at", "on", "in"], correct: 2 },
+    { q: "Complete with preposition: 'We spent a day at an amusement park when we were _____ holiday.'", options: ["on", "at", "in"], correct: 0 },
+    { q: "Complete: 'I _____ four times a week to join the football team.'", options: ["am training", "train", "trained"], correct: 1 },
+    { q: "Complete with preposition: 'We stayed _____ home this year.'", options: ["in", "at", "on"], correct: 1 },
+    { q: "Choose the correct verb form: 'Look! The hero _______ from prison!'", options: ["escapes", "is escaping", "escaped"], correct: 1 }
+  ],
+  speak: [
+    { q: "What do you think the phrase 'dreams don't work unless you do' means?" },
+    { q: "Are you an 'early bird' or a 'night owl'? What are the advantages of your routine?" },
+    { q: "What do you think stops some people from following their dreams?" },
+    { q: "If you could learn any new skill or start any course, what would it be?" }
+  ],
+  wild: [
+    { q: "🌟 WILDCARD: Share 1 small step you could take this week toward a personal goal!" },
+    { q: "⚡ BONUS: What is 1 thing you are proud you achieved this year? (Roll again!)" },
+    { q: "🌀 WARP HUB: Tell the group about your favorite way to relax." }
+  ]
+};
+
+const players = [
+  { id: 1, name: "Player 1", color: "#3b82f6", pos: 0, skip: false },
+  { id: 2, name: "Player 2", color: "#ef4444", pos: 0, skip: false },
+  { id: 3, name: "Player 3", color: "#22c55e", pos: 0, skip: false },
+  { id: 4, name: "Player 4", color: "#eab308", pos: 0, skip: false }
+];
+
+let currentTurn = 0;
+let isRolling = false;
+let currentQuestionObj = null;
+
+function initBoard() {
+  const trackGroup = document.getElementById('track-nodes');
+  trackGroup.innerHTML = '';
+
+  boardNodes.forEach(node => {
+    let color = '#64748b';
+    if(node.type === 'vocab') color = 'var(--vocab-color)';
+    if(node.type === 'grammar') color = 'var(--grammar-color)';
+    if(node.type === 'speak') color = 'var(--speak-color)';
+    if(node.type === 'wild') color = 'var(--wild-color)';
+    if(node.type === 'start') color = '#10b981';
+    if(node.type === 'finish') color = '#f43f5e';
+    if(node.type === 'junction') color = '#38bdf8';
+    if(node.type === 'skipturn') color = '#ef4444';
+    if(node.type === 'goback' || node.type === 'loop') color = '#f59e0b';
+    if(node.type === 'warp') color = '#c084fc';
+
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.setAttribute('class', 'tile-node');
+
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute('cx', node.x);
+    circle.setAttribute('cy', node.y);
+    circle.setAttribute('r', 32);
+    circle.setAttribute('fill', color);
+    circle.setAttribute('stroke', '#ffffff');
+    circle.setAttribute('stroke-width', '3.5');
+
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    text.setAttribute('x', node.x);
+    text.setAttribute('y', node.y);
+    text.setAttribute('class', 'node-text');
+    text.textContent = node.label;
+
+    g.appendChild(circle);
+    g.appendChild(text);
+    trackGroup.appendChild(g);
+  });
+
+  renderPlayers();
+  updatePlayerList();
+}
+
+function renderPlayers() {
+  const tokenGroup = document.getElementById('player-tokens');
+  tokenGroup.innerHTML = '';
+
+  players.forEach((p, idx) => {
+    const node = boardNodes[p.pos];
+    const offsets = [{x:-12, y:-12}, {x:12, y:-12}, {x:-12, y:12}, {x:12, y:12}];
+    const ox = node.x + offsets[idx].x;
+    const oy = node.y + offsets[idx].y;
+
+    const token = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    token.setAttribute('class', 'p-token');
+    token.setAttribute('cx', ox);
+    token.setAttribute('cy', oy);
+    token.setAttribute('r', 12);
+    token.setAttribute('fill', p.color);
+    token.setAttribute('stroke', '#ffffff');
+    token.setAttribute('stroke-width', '2.5');
+
+    tokenGroup.appendChild(token);
+  });
+}
+
+function updatePlayerList() {
+  const list = document.getElementById('player-list');
+  list.innerHTML = '';
+
+  players.forEach((p, idx) => {
+    const card = document.createElement('div');
+    card.className = `player-card ${idx === currentTurn ? 'active' : ''}`;
+    card.innerHTML = `
+      <div class="p-info">
+        <span class="p-avatar" style="background:${p.color}"></span>
+        ${p.name}
+      </div>
+      <div class="p-status">${p.skip ? '🛑 SKIPPED' : 'Tile ' + p.pos}</div>
+    `;
+    list.appendChild(card);
+  });
+
+  document.getElementById('turn-display').textContent = players[currentTurn].name;
+  document.getElementById('turn-display').style.color = players[currentTurn].color;
+}
+
+function rollDice() {
+  if (isRolling) return;
+
+  const player = players[currentTurn];
+  if (player.skip) {
+    alert(`${player.name} misses this turn! 🛑`);
+    player.skip = false;
+    nextTurn();
+    return;
+  }
+
+  isRolling = true;
+  const diceEl = document.getElementById('dice');
+  let rollCount = 0;
+
+  const interval = setInterval(() => {
+    const tempRoll = Math.floor(Math.random() * 6) + 1;
+    diceEl.textContent = tempRoll;
+    rollCount++;
+
+    if (rollCount > 10) {
+      clearInterval(interval);
+      const finalRoll = Math.floor(Math.random() * 6) + 1;
+      diceEl.textContent = finalRoll;
+      movePlayer(player, finalRoll);
+    }
+  }, 80);
+}
+
+function movePlayer(player, steps) {
+  let newPos = player.pos + steps;
+  if (newPos >= boardNodes.length - 1) {
+    newPos = boardNodes.length - 1;
+  }
+
+  player.pos = newPos;
+  renderPlayers();
+  updatePlayerList();
+
+  setTimeout(() => {
+    isRolling = false;
+    triggerTileEvent(boardNodes[newPos]);
+  }, 600);
+}
+
+function triggerTileEvent(node) {
+  const player = players[currentTurn];
+
+  if (node.type === 'finish') {
+    alert(`🎉 CONGRATULATIONS! ${player.name} reached the FINISH and won the game! 🏆`);
+    return;
+  }
+
+  if (node.type === 'skipturn') {
+    player.skip = true;
+    alert(`🛑 Red Light! ${player.name} misses the next turn.`);
+    nextTurn();
+    return;
+  }
+
+  if (node.type === 'goback') {
+    alert(`🔄 Move back 2 spaces.`);
+    player.pos = Math.max(0, player.pos - 2);
+    renderPlayers();
+    updatePlayerList();
+    nextTurn();
+    return;
+  }
+
+  showModal(node.type);
+}
+
+function showModal(type) {
+  const modal = document.getElementById('modal');
+  const typeEl = document.getElementById('modal-type');
+  const qEl = document.getElementById('modal-question');
+  const optionsContainer = document.getElementById('options-container');
+  const feedbackBox = document.getElementById('feedback-box');
+  const btnSubmit = document.getElementById('btn-submit');
+  const btnClose = document.getElementById('btn-close');
+
+  optionsContainer.innerHTML = '';
+  feedbackBox.className = 'feedback-box';
+  feedbackBox.style.display = 'none';
+
+  let categoryKey = type;
+  if (type === 'junction' || type === 'loop' || type === 'warp') categoryKey = 'wild';
+
+  const bank = questions[categoryKey] || questions.vocab;
+  currentQuestionObj = bank[Math.floor(Math.random() * bank.length)];
+
+  typeEl.textContent = categoryKey.toUpperCase() + " CHALLENGE";
+  qEl.textContent = currentQuestionObj.q;
+
+  if (currentQuestionObj.options) {
+    currentQuestionObj.options.forEach((optText, index) => {
+      const label = document.createElement('label');
+      label.className = 'option-label';
+      label.innerHTML = `<input type="radio" name="q-option" value="${index}"> ${optText}`;
+      optionsContainer.appendChild(label);
+    });
+    btnSubmit.style.display = 'inline-block';
+    btnClose.style.display = 'none';
+  } else {
+    btnSubmit.style.display = 'none';
+    btnClose.style.display = 'inline-block';
+  }
+
+  modal.classList.add('active');
+}
+
+function checkRadioAnswer() {
+  const selectedOption = document.querySelector('input[name="q-option"]:checked');
+  const feedbackBox = document.getElementById('feedback-box');
+  const btnSubmit = document.getElementById('btn-submit');
+  const btnClose = document.getElementById('btn-close');
+
+  if (!selectedOption) {
+    alert("Please select an answer first!");
+    return;
+  }
+
+  const selectedIndex = parseInt(selectedOption.value);
+  if (selectedIndex === currentQuestionObj.correct) {
+    feedbackBox.textContent = "✓ Correct Answer! You stay on this tile.";
+    feedbackBox.className = "feedback-box correct";
+  } else {
+    feedbackBox.textContent = "✗ Incorrect! Move back 2 spaces.";
+    feedbackBox.className = "feedback-box incorrect";
+    
+    const player = players[currentTurn];
+    player.pos = Math.max(0, player.pos - 2);
+    renderPlayers();
+  }
+
+  btnSubmit.style.display = 'none';
+  btnClose.style.display = 'inline-block';
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+  nextTurn();
+}
+
+function nextTurn() {
+  currentTurn = (currentTurn + 1) % players.length;
+  updatePlayerList();
+}
+
+function resetGame() {
+  if (!confirm("Are you sure you want to reset the game back to the start?")) {
+    return;
+  }
+
+  players.forEach(p => {
+    p.pos = 0;
+    p.skip = false;
+  });
+
+  currentTurn = 0;
+  isRolling = false;
+  document.getElementById('dice').textContent = '🎲';
+
+  renderPlayers();
+  updatePlayerList();
+}
+
+window.onload = initBoard;
+</script>
+</body>
+</html>
